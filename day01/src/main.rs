@@ -39,7 +39,4 @@ fn main() {
 
     println!("Part 1: {}", calculate_total_fuel(&modules, calculate_fuel));
     println!("Part 2: {}", calculate_total_fuel(&modules, calculate_fuel_with_extra_fuel));
-
-    // answer part 1: 3262358
-    // answer part 2: 4890696
 }
