@@ -11,24 +11,19 @@ fn read_input(path: &str) -> Vec<usize> {
 
 struct IntcodeMachine {
     tape: Vec<usize>,
-    initial_tape: Vec<usize>,
     position: usize,
 }
 
 impl IntcodeMachine {
     fn new(tape: Vec<usize>) -> IntcodeMachine {
-        IntcodeMachine {tape: tape.clone(), initial_tape: tape, position: 0}
+        IntcodeMachine {tape, position: 0}
     }
 
-    fn new_init(mut tape: Vec<usize>, noun: usize, verb: usize) -> IntcodeMachine {
+    fn init(mut tape: Vec<usize>, noun: usize, verb: usize) -> IntcodeMachine {
         tape[1] = noun;
         tape[2] = verb;
 
-        IntcodeMachine {tape: tape.clone(), initial_tape: tape, position: 0}
-    }
-
-    fn reset(&mut self) {
-        self.tape = self.initial_tape.clone();
+        IntcodeMachine {tape, position: 0}
     }
 
     fn addi(&mut self) {
@@ -76,19 +71,18 @@ fn main() {
     let tape: Vec<usize> = read_input("input");
 
     // Part 1
-    let mut machine = IntcodeMachine::new_init(tape.clone(), 12, 02);
-    println!("{}", machine.run());
+    let mut machine = IntcodeMachine::init(tape.clone(), 12, 02);
+    println!("Part 1: {}", machine.run());
 
     // part 2
     let desired_output = 19690720;
 
     for noun in 0..=99 {
         for verb in 0..=99 {
-            let mut machine = IntcodeMachine::new_init(tape.clone(), noun, verb);
+            let mut machine = IntcodeMachine::init(tape.clone(), noun, verb);
             if machine.run() == desired_output {
-                println!("100 * {} + {} = {}", noun, verb, 100* noun + verb);
+                println!("Part 2: 100 * {} + {} = {}", noun, verb, 100* noun + verb);
             }
-            machine.reset();
         }
     }
 }
