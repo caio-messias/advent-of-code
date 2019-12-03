@@ -9,3 +9,6 @@
 # Files specific to intellij idea
 /.idea/
 *.iml
+
+# Files specific to advent of code event
+**/input
