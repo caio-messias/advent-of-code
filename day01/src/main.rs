@@ -1,4 +1,3 @@
-use std::convert::From;
 use std::io;
 use std::io::{BufReader, BufRead};
 use std::fs::File;
@@ -10,7 +9,7 @@ fn read_input(path: &str) -> io::Result<Vec<String>> {
 }
 
 fn calculate_fuel(module: i32) -> i32 {
-    return (f64::from(module) / 3f64).floor() as i32 - 2;
+    return module / 3 - 2;
 }
 
 fn calculate_fuel_with_extra_fuel(module: i32) -> i32 {
@@ -25,7 +24,7 @@ fn calculate_fuel_with_extra_fuel(module: i32) -> i32 {
     return fuel;
 }
 
-fn calculate_total_fuel(modules: &Vec<i32>, calculate_fuel_method: fn(i32) -> i32) -> i32 {
+fn calculate_total_fuel(modules: &[i32], calculate_fuel_method: fn(i32) -> i32) -> i32 {
     return modules.iter()
         .map(|x| calculate_fuel_method(*x))
         .sum()
