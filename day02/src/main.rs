@@ -14,7 +14,8 @@ fn main() {
     let tape: Vec<isize> = read_input("input");
 
     // Part 1
-    let mut machine = IntcodeMachine::init(tape.clone(), 12, 02);
+    let mut machine = IntcodeMachine::new(tape.clone())
+        .with_init(12, 02);
     println!("Part 1: {}", machine.run());
 
     // part 2
@@ -22,7 +23,9 @@ fn main() {
 
     for noun in 0..=99 {
         for verb in 0..=99 {
-            let mut machine = IntcodeMachine::init(tape.clone(), noun, verb);
+            let mut machine = IntcodeMachine::new(tape.clone())
+                .with_init(noun, verb);
+
             if machine.run() == desired_output {
                 println!("Part 2: 100 * {} + {} = {}", noun, verb, 100* noun + verb);
             }
