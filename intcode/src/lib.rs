@@ -125,7 +125,6 @@ impl IntcodeMachine {
     /// add those values, and then overwrite the value at position 30 with their sum.
     fn add(&mut self) {
         let (mode3, mode2, mode1) = self.fetch3modes();
-
         let a = self.fetch_arg(mode1);
         let b = self.fetch_arg(mode2);
         let dest = self.fetch_dest(mode3);
@@ -138,12 +137,10 @@ impl IntcodeMachine {
     /// Multiply instruction, opcode 2.
     /// Multiplies the two inputs it receives and store the result in the third position.
     fn mul(&mut self) {
-        let (_mode3, mode2, mode1) = self.fetch3modes();
-
+        let (mode3, mode2, mode1) = self.fetch3modes();
         let a = self.fetch_arg(mode1);
         let b = self.fetch_arg(mode2);
-        let dest = self.fetch_dest(_mode3);
-
+        let dest = self.fetch_dest(mode3);
 
         let result = a * b;
         self.store(dest, result);
@@ -303,7 +300,7 @@ mod tests {
     use super::IntcodeMachine;
 
     #[test]
-    fn example1() {
+    fn test_mul_should_output_3500() {
         let tape: Vec<i64> = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let mut machine = IntcodeMachine::new(tape);
 
@@ -311,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn example2() {
+    fn test_add_positional_should_output_2() {
         let tape: Vec<i64> = vec![1, 0, 0, 0, 99];
         let mut machine = IntcodeMachine::new(tape);
 
@@ -319,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn example3() {
+    fn test_mul_positional_should_output_6() {
         let tape: Vec<i64> = vec![2, 3, 0, 3, 99];
         let mut machine = IntcodeMachine::new(tape);
 
@@ -327,7 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn example4() {
+    fn test_mul_positional_should_output_9801() {
         let tape: Vec<i64> = vec![2, 4, 4, 5, 99, 0];
         let mut machine = IntcodeMachine::new(tape);
 
@@ -335,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn example5() {
+    fn test_overwrite_tape_and_mul_should_output_30() {
         let tape: Vec<i64> = vec![1, 1, 1, 4, 99, 5, 6, 0, 99];
         let mut machine = IntcodeMachine::new(tape);
 
@@ -343,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn test_addi_different_modes() {
+    fn test_add_different_modes() {
         let tape: Vec<i64> = vec![1002, 4, 3, 4, 33];
         let mut machine = IntcodeMachine::new(tape);
 
