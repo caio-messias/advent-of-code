@@ -1,22 +1,22 @@
 use std::collections::VecDeque;
 
 pub struct IntcodeMachine {
-    tape: Vec<isize>,
+    tape: Vec<i64>,
     position: usize,
-    pub input: VecDeque<isize>,
-    pub output: Option<isize>,
-    status: MachineStatus,
     relative_base: isize,
+    input: VecDeque<i64>,
+    output: Option<i64>,
+    status: MachineStatus,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 enum ParameterMode {
     Positional,
     Immediate,
     Relative
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 enum MachineStatus {
     Run,
     Yield,
@@ -24,7 +24,7 @@ enum MachineStatus {
 }
 
 impl IntcodeMachine {
-    pub fn new(tape: Vec<isize>) -> IntcodeMachine {
+    pub fn new(tape: Vec<i64>) -> IntcodeMachine {
         IntcodeMachine {
             tape,
             position: 0,
@@ -35,22 +35,22 @@ impl IntcodeMachine {
         }
     }
 
-    pub fn with_init(mut self, noun: isize, verb: isize) -> IntcodeMachine {
+    pub fn with_init(mut self, noun: i64, verb: i64) -> IntcodeMachine {
         self.tape[1] = noun;
         self.tape[2] = verb;
         return self;
     }
 
-    pub fn with_input(mut self, input: isize) -> Self {
+    pub fn with_input(mut self, input: i64) -> Self {
         self.add_input(input);
         return self;
     }
 
-    pub fn add_input(&mut self, input: isize) {
+    pub fn add_input(&mut self, input: i64) {
         self.input.push_back(input);
     }
 
-    fn parse_mode(&self, i: isize) -> ParameterMode {
+    fn parse_mode(&self, i: i64) -> ParameterMode {
         match i {
             1 => ParameterMode::Immediate,
             2 => ParameterMode::Relative,
@@ -77,22 +77,27 @@ impl IntcodeMachine {
         (self.parse_mode(mode3 % 10), mode2, mode1)
     }
 
-    fn fetch_arg(&mut self, mode: ParameterMode) -> isize {
+    fn fetch_arg(&mut self, mode: ParameterMode) -> i64 {
         self.position += 1;
 
-        match mode {
+        let pointer: usize = match mode {
             ParameterMode::Positional => {
-                let pointer = self.tape[self.position] as usize;
-                return self.tape[pointer];
+                self.tape[self.position] as usize
             },
             ParameterMode::Immediate => {
-                return self.tape[self.position];
+                self.position
             },
             ParameterMode::Relative => {
-                let offset = self.tape[self.position];
-                return self.tape[(self.relative_base as isize + offset) as usize];
+                let offset = self.tape[self.position] as isize;
+                (self.relative_base + offset) as usize
             }
+        };
+
+        if pointer > self.tape.capacity() {
+            self.tape.resize(pointer * 2, 0);
         }
+
+        return self.tape[pointer];
     }
 
     fn fetch_dest(&mut self, mode: ParameterMode) -> usize {
@@ -101,13 +106,16 @@ impl IntcodeMachine {
                 return self.fetch_arg(ParameterMode::Immediate) as usize;
             }
             ParameterMode::Relative => {
-                let arg = self.fetch_arg(ParameterMode::Immediate);
+                let arg = self.fetch_arg(ParameterMode::Immediate) as isize;
                 return (self.relative_base + arg) as usize;
             }
         }
     }
 
-    fn store(&mut self, dest: usize, value: isize) {
+    fn store(&mut self, dest: usize, value: i64) {
+        if dest > self.tape.capacity() {
+            self.tape.resize(dest * 2, 0);
+        }
         self.tape[dest] = value;
     }
 
@@ -116,14 +124,12 @@ impl IntcodeMachine {
     /// For example, if your Intcode computer encounters 1,10,20,30, it should read the values at positions 10 and 20,
     /// add those values, and then overwrite the value at position 30 with their sum.
     fn add(&mut self) {
-        let (_mode3, mode2, mode1) = self.fetch3modes();
-        println!("{:?} {:?} {:?}", _mode3, mode2, mode1);
+        let (mode3, mode2, mode1) = self.fetch3modes();
 
         let a = self.fetch_arg(mode1);
         let b = self.fetch_arg(mode2);
-        let dest = self.fetch_dest(_mode3);
+        let dest = self.fetch_dest(mode3);
 
-        println!("add tape[{}] = {} {}", dest, a, b);
         let result = a + b;
         self.store(dest, result);
         self.position += 1;
@@ -235,7 +241,7 @@ impl IntcodeMachine {
         let mode = self.fetch1mode();
         let base = self.fetch_arg(mode);
 
-        self.relative_base += base;
+        self.relative_base += base as isize;
         self.position += 1;
     }
 
@@ -254,11 +260,15 @@ impl IntcodeMachine {
         return self.status == MachineStatus::Yield && self.output.is_some();
     }
 
-    pub fn run(&mut self) -> isize {
+    pub fn get_output(&self) -> Option<i64> {
+        return self.output;
+    }
+
+    pub fn run(&mut self) -> i64 {
         return self.run_for_target(0);
     }
 
-    pub fn run_for_target(&mut self, target: usize) -> isize {
+    pub fn run_for_target(&mut self, target: usize) -> i64 {
         self.status = MachineStatus::Run;
 
         loop {
@@ -278,7 +288,7 @@ impl IntcodeMachine {
             }
 
             if self.status == MachineStatus::Halt {
-                return self.tape[target] as isize;
+                return self.tape[target];
             }
 
             if self.status == MachineStatus::Yield {
@@ -287,21 +297,14 @@ impl IntcodeMachine {
         }
     }
 }
-// todo change isize to usize and vice versa
-// todo remove run_for_target
-// todo resize tape when accessing it
-// todo stop test instructions from subtracting
-// todo think about halt. Should it totaly stop the code from running ever again?
-// todo make fetch_arg also take modes into account
 
 #[cfg(test)]
 mod tests {
     use super::IntcodeMachine;
-    use crate::MachineStatus;
 
     #[test]
     fn example1() {
-        let tape: Vec<isize> = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
+        let tape: Vec<i64> = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let mut machine = IntcodeMachine::new(tape);
 
         assert_eq!(machine.run(), 3500)
@@ -309,7 +312,7 @@ mod tests {
 
     #[test]
     fn example2() {
-        let tape: Vec<isize> = vec![1, 0, 0, 0, 99];
+        let tape: Vec<i64> = vec![1, 0, 0, 0, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         assert_eq!(machine.run(), 2)
@@ -317,7 +320,7 @@ mod tests {
 
     #[test]
     fn example3() {
-        let tape: Vec<isize> = vec![2, 3, 0, 3, 99];
+        let tape: Vec<i64> = vec![2, 3, 0, 3, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         assert_eq!(machine.run_for_target(3), 6)
@@ -325,7 +328,7 @@ mod tests {
 
     #[test]
     fn example4() {
-        let tape: Vec<isize> = vec![2, 4, 4, 5, 99, 0];
+        let tape: Vec<i64> = vec![2, 4, 4, 5, 99, 0];
         let mut machine = IntcodeMachine::new(tape);
 
         assert_eq!(machine.run_for_target(5), 9801)
@@ -333,7 +336,7 @@ mod tests {
 
     #[test]
     fn example5() {
-        let tape: Vec<isize> = vec![1, 1, 1, 4, 99, 5, 6, 0, 99];
+        let tape: Vec<i64> = vec![1, 1, 1, 4, 99, 5, 6, 0, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         assert_eq!(machine.run(), 30)
@@ -341,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_addi_different_modes() {
-        let tape: Vec<isize> = vec![1002, 4, 3, 4, 33];
+        let tape: Vec<i64> = vec![1002, 4, 3, 4, 33];
         let mut machine = IntcodeMachine::new(tape);
 
         assert_eq!(machine.run_for_target(4), 99)
@@ -349,7 +352,7 @@ mod tests {
 
     #[test]
     fn test_input_output() {
-        let tape: Vec<isize> = vec![3, 0, 4, 0, 99];
+        let tape: Vec<i64> = vec![3, 0, 4, 0, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(1234);
 
@@ -359,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_eq8_position() {
-        let tape: Vec<isize> = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
+        let tape: Vec<i64> = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(8);
 
@@ -369,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_neq8_position() {
-        let tape: Vec<isize> = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
+        let tape: Vec<i64> = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(5);
 
@@ -379,7 +382,7 @@ mod tests {
 
     #[test]
     fn test_lt8_position() {
-        let tape: Vec<isize> = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
+        let tape: Vec<i64> = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(5);
 
@@ -389,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_nlt8_position() {
-        let tape: Vec<isize> = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
+        let tape: Vec<i64> = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(80);
 
@@ -399,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_eq8_immediate() {
-        let tape: Vec<isize> = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
+        let tape: Vec<i64> = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(8);
 
@@ -409,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_neq8_immediate() {
-        let tape: Vec<isize> = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
+        let tape: Vec<i64> = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(9);
 
@@ -419,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_lt8_immediate() {
-        let tape: Vec<isize> = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
+        let tape: Vec<i64> = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(5);
 
@@ -429,7 +432,7 @@ mod tests {
 
     #[test]
     fn test_nlt8_immediate() {
-        let tape: Vec<isize> = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
+        let tape: Vec<i64> = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(9);
 
@@ -439,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_jump0_position() {
-        let tape: Vec<isize> = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        let tape: Vec<i64> = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(0);
 
@@ -449,7 +452,7 @@ mod tests {
 
     #[test]
     fn test_jump1_position() {
-        let tape: Vec<isize> = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        let tape: Vec<i64> = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(999);
 
@@ -459,7 +462,7 @@ mod tests {
 
     #[test]
     fn test_jump0_immediate() {
-        let tape: Vec<isize> = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
+        let tape: Vec<i64> = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(0);
 
@@ -469,7 +472,7 @@ mod tests {
 
     #[test]
     fn test_jump1_immediate() {
-        let tape: Vec<isize> = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
+        let tape: Vec<i64> = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(999);
 
@@ -479,7 +482,7 @@ mod tests {
 
     #[test]
     fn test_large_lt() {
-        let tape: Vec<isize> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
+        let tape: Vec<i64> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
                                     1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
                                     999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
         let mut machine = IntcodeMachine::new(tape)
@@ -491,7 +494,7 @@ mod tests {
 
     #[test]
     fn test_large_eq() {
-        let tape: Vec<isize> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
+        let tape: Vec<i64> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
                                     1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
                                     999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
         let mut machine = IntcodeMachine::new(tape)
@@ -503,7 +506,7 @@ mod tests {
 
     #[test]
     fn test_large_gt() {
-        let tape: Vec<isize> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
+        let tape: Vec<i64> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
                                     1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
                                     999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
         let mut machine = IntcodeMachine::new(tape)
@@ -515,7 +518,7 @@ mod tests {
 
     #[test]
     fn test_rel_immediate() {
-        let tape: Vec<isize> = vec![109, 2000, 109, 19, 99];
+        let tape: Vec<i64> = vec![109, 2000, 109, 19, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
@@ -524,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_rel_relative() {
-        let tape: Vec<isize> = vec![109, 21, 204,-19, 99];
+        let tape: Vec<i64> = vec![109, 21, 204,-19, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
@@ -534,9 +537,8 @@ mod tests {
 
     #[test]
     fn test_quine() {
-        let mut tape: Vec<isize> = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
+        let mut tape: Vec<i64> = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
         let tape_original = tape.clone();
-        tape.resize(200, 0);
         let mut machine = IntcodeMachine::new(tape);
         let mut output_quine = vec![];
 
@@ -552,7 +554,7 @@ mod tests {
 
     #[test]
     fn test_large_mult() {
-        let tape: Vec<isize> = vec![1102,34915192,34915192,7,4,7,99,0];
+        let tape: Vec<i64> = vec![1102,34915192,34915192,7,4,7,99,0];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
@@ -561,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_large_output() {
-        let tape: Vec<isize> = vec![104,1125899906842624,99];
+        let tape: Vec<i64> = vec![104,1125899906842624,99];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
