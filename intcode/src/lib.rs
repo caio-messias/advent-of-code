@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::vec_deque::VecDeque;
 
 pub struct IntcodeMachine {
     tape: Vec<i64>,
