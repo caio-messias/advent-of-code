@@ -13,7 +13,7 @@ pub struct IntcodeMachine {
 enum ParameterMode {
     Positional,
     Immediate,
-    Relative
+    Relative,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -83,10 +83,10 @@ impl IntcodeMachine {
         let pointer: usize = match mode {
             ParameterMode::Positional => {
                 self.tape[self.position] as usize
-            },
+            }
             ParameterMode::Immediate => {
                 self.position
-            },
+            }
             ParameterMode::Relative => {
                 let offset = self.tape[self.position] as isize;
                 (self.relative_base + offset) as usize
@@ -289,7 +289,7 @@ impl IntcodeMachine {
             }
 
             if self.status == MachineStatus::Yield {
-                return self.output.unwrap()
+                return self.output.unwrap();
             }
         }
     }
@@ -480,8 +480,8 @@ mod tests {
     #[test]
     fn test_large_lt() {
         let tape: Vec<i64> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
-                                    1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
-                                    999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
+                                  1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
+                                  999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(7);
 
@@ -492,8 +492,8 @@ mod tests {
     #[test]
     fn test_large_eq() {
         let tape: Vec<i64> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
-                                    1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
-                                    999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
+                                  1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
+                                  999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(8);
 
@@ -504,8 +504,8 @@ mod tests {
     #[test]
     fn test_large_gt() {
         let tape: Vec<i64> = vec![3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
-                                    1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
-                                    999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
+                                  1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
+                                  999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99];
         let mut machine = IntcodeMachine::new(tape)
             .with_input(9);
 
@@ -524,7 +524,7 @@ mod tests {
 
     #[test]
     fn test_rel_relative() {
-        let tape: Vec<i64> = vec![109, 21, 204,-19, 99];
+        let tape: Vec<i64> = vec![109, 21, 204, -19, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
@@ -534,7 +534,7 @@ mod tests {
 
     #[test]
     fn test_quine() {
-        let mut tape: Vec<i64> = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
+        let mut tape: Vec<i64> = vec![109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99];
         let tape_original = tape.clone();
         let mut machine = IntcodeMachine::new(tape);
         let mut output_quine = vec![];
@@ -551,7 +551,7 @@ mod tests {
 
     #[test]
     fn test_large_mult() {
-        let tape: Vec<i64> = vec![1102,34915192,34915192,7,4,7,99,0];
+        let tape: Vec<i64> = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
@@ -560,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_large_output() {
-        let tape: Vec<i64> = vec![104,1125899906842624,99];
+        let tape: Vec<i64> = vec![104, 1125899906842624, 99];
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
