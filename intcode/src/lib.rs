@@ -113,7 +113,7 @@ impl IntcodeMachine {
     }
 
     fn store(&mut self, dest: usize, value: i64) {
-        if dest > self.tape.capacity() {
+        if dest > self.tape.len() {
             self.tape.resize(dest * 2, 0);
         }
         self.tape[dest] = value;
