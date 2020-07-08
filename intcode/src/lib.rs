@@ -5,7 +5,7 @@ pub struct IntcodeMachine {
     position: usize,
     relative_base: isize,
     input: VecDeque<i64>,
-    output: Option<i64>,
+    pub output: Vec<i64>,
     status: MachineStatus,
 }
 
@@ -16,7 +16,7 @@ enum ParameterMode {
     Relative,
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum MachineStatus {
     Run,
     Yield,
@@ -29,7 +29,7 @@ impl IntcodeMachine {
             tape,
             position: 0,
             input: VecDeque::new(),
-            output: Option::None,
+            output: vec![],
             status: MachineStatus::Run,
             relative_base: 0,
         }
@@ -47,6 +47,7 @@ impl IntcodeMachine {
     }
 
     pub fn add_input(&mut self, input: i64) {
+        self.status = MachineStatus::Run;
         self.input.push_back(input);
     }
 
@@ -93,7 +94,7 @@ impl IntcodeMachine {
             }
         };
 
-        if pointer > self.tape.capacity() {
+        if pointer > self.tape.len() {
             self.tape.resize(pointer * 2, 0);
         }
 
@@ -101,13 +102,13 @@ impl IntcodeMachine {
     }
 
     fn fetch_dest(&mut self, mode: ParameterMode) -> usize {
-        match mode {
+        return match mode {
             ParameterMode::Positional | ParameterMode::Immediate => {
-                return self.fetch_arg(ParameterMode::Immediate) as usize;
+                self.fetch_arg(ParameterMode::Immediate) as usize
             }
             ParameterMode::Relative => {
                 let arg = self.fetch_arg(ParameterMode::Immediate) as isize;
-                return (self.relative_base + arg) as usize;
+                (self.relative_base + arg) as usize
             }
         }
     }
@@ -153,10 +154,15 @@ impl IntcodeMachine {
     fn st(&mut self) {
         let mode = self.fetch1mode();
         let dest = self.fetch_dest(mode);
-        let input = self.input.pop_front().unwrap();
 
-        self.store(dest, input);
-        self.position += 1;
+        if let Some(input) = self.input.pop_front() {
+            self.store(dest, input);
+            self.position += 1;
+        } else {
+            // This instruction should be executed again when input is available.
+            self.status = MachineStatus::Yield;
+            self.position -= 1;
+        }
     }
 
     /// Load instruction, opcode 4.
@@ -166,8 +172,7 @@ impl IntcodeMachine {
         let mode = self.fetch1mode();
         let output = self.fetch_arg(mode);
 
-        self.output = Some(output);
-        self.status = MachineStatus::Yield;
+        self.output.push(output);
         self.position += 1;
     }
 
@@ -253,12 +258,12 @@ impl IntcodeMachine {
         return self.status == MachineStatus::Halt;
     }
 
-    pub fn has_output(&self) -> bool {
-        return self.status == MachineStatus::Yield && self.output.is_some();
+    pub fn yielded(&self) -> bool {
+        return self.status == MachineStatus::Yield;
     }
 
-    pub fn get_output(&self) -> Option<i64> {
-        return self.output;
+    pub fn has_output(&self) -> bool {
+        return self.output.len() > 0;
     }
 
     pub fn run(&mut self) -> i64 {
@@ -281,15 +286,11 @@ impl IntcodeMachine {
                 8 => self.teq(),
                 9 => self.rel(),
                 99 => self.halt(),
-                _ => panic!("unkown opcode {} at position {}", opcode, self.position),
+                _ => panic!("Unknown opcode {} at position {}", opcode, self.position),
             }
 
-            if self.status == MachineStatus::Halt {
+            if self.status == MachineStatus::Halt || self.status == MachineStatus::Yield {
                 return self.tape[target];
-            }
-
-            if self.status == MachineStatus::Yield {
-                return self.output.unwrap();
             }
         }
     }
@@ -354,7 +355,7 @@ mod tests {
             .with_input(1234);
 
         machine.run();
-        assert_eq!(machine.output, Some(1234));
+        assert_eq!(machine.output[0], 1234);
     }
 
     #[test]
@@ -364,7 +365,7 @@ mod tests {
             .with_input(8);
 
         machine.run();
-        assert_eq!(machine.output, Some(1));
+        assert_eq!(machine.output[0], 1);
     }
 
     #[test]
@@ -374,7 +375,7 @@ mod tests {
             .with_input(5);
 
         machine.run();
-        assert_eq!(machine.output, Some(0));
+        assert_eq!(machine.output[0], 0);
     }
 
     #[test]
@@ -384,7 +385,7 @@ mod tests {
             .with_input(5);
 
         machine.run();
-        assert_eq!(machine.output, Some(1));
+        assert_eq!(machine.output[0], 1);
     }
 
     #[test]
@@ -394,7 +395,7 @@ mod tests {
             .with_input(80);
 
         machine.run();
-        assert_eq!(machine.output, Some(0));
+        assert_eq!(machine.output[0], 0);
     }
 
     #[test]
@@ -404,7 +405,7 @@ mod tests {
             .with_input(8);
 
         machine.run();
-        assert_eq!(machine.output, Some(1));
+        assert_eq!(machine.output[0], 1);
     }
 
     #[test]
@@ -414,7 +415,7 @@ mod tests {
             .with_input(9);
 
         machine.run();
-        assert_eq!(machine.output, Some(0));
+        assert_eq!(machine.output[0], 0);
     }
 
     #[test]
@@ -424,7 +425,7 @@ mod tests {
             .with_input(5);
 
         machine.run();
-        assert_eq!(machine.output, Some(1));
+        assert_eq!(machine.output[0], 1);
     }
 
     #[test]
@@ -434,7 +435,7 @@ mod tests {
             .with_input(9);
 
         machine.run();
-        assert_eq!(machine.output, Some(0));
+        assert_eq!(machine.output[0], 0);
     }
 
     #[test]
@@ -444,7 +445,7 @@ mod tests {
             .with_input(0);
 
         machine.run();
-        assert_eq!(machine.output, Some(0));
+        assert_eq!(machine.output[0], 0);
     }
 
     #[test]
@@ -454,7 +455,7 @@ mod tests {
             .with_input(999);
 
         machine.run();
-        assert_eq!(machine.output, Some(1));
+        assert_eq!(machine.output[0], 1);
     }
 
     #[test]
@@ -464,7 +465,7 @@ mod tests {
             .with_input(0);
 
         machine.run();
-        assert_eq!(machine.output, Some(0));
+        assert_eq!(machine.output[0], 0);
     }
 
     #[test]
@@ -474,7 +475,7 @@ mod tests {
             .with_input(999);
 
         machine.run();
-        assert_eq!(machine.output, Some(1));
+        assert_eq!(machine.output[0], 1);
     }
 
     #[test]
@@ -486,7 +487,7 @@ mod tests {
             .with_input(7);
 
         machine.run();
-        assert_eq!(machine.output, Some(999));
+        assert_eq!(machine.output[0], 999);
     }
 
     #[test]
@@ -498,7 +499,7 @@ mod tests {
             .with_input(8);
 
         machine.run();
-        assert_eq!(machine.output, Some(1000));
+        assert_eq!(machine.output[0], 1000);
     }
 
     #[test]
@@ -510,7 +511,7 @@ mod tests {
             .with_input(9);
 
         machine.run();
-        assert_eq!(machine.output, Some(1001));
+        assert_eq!(machine.output[0], 1001);
     }
 
     #[test]
@@ -529,7 +530,7 @@ mod tests {
 
         machine.run();
         assert_eq!(21, machine.relative_base);
-        assert_eq!(machine.output, Some(204));
+        assert_eq!(machine.output[0], 204);
     }
 
     #[test]
@@ -537,16 +538,9 @@ mod tests {
         let mut tape: Vec<i64> = vec![109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99];
         let tape_original = tape.clone();
         let mut machine = IntcodeMachine::new(tape);
-        let mut output_quine = vec![];
 
-        while !machine.halted() {
-            machine.run();
-            if machine.has_output() {
-                output_quine.push(machine.output.unwrap());
-            }
-        }
-
-        assert_eq!(output_quine, tape_original);
+        machine.run();
+        assert_eq!(machine.output, tape_original);
     }
 
     #[test]
@@ -555,7 +549,7 @@ mod tests {
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
-        assert_eq!(machine.output.unwrap(), 1219070632396864);
+        assert_eq!(machine.output[0], 1219070632396864);
     }
 
     #[test]
@@ -564,6 +558,6 @@ mod tests {
         let mut machine = IntcodeMachine::new(tape);
 
         machine.run();
-        assert_eq!(machine.output, Some(1125899906842624));
+        assert_eq!(machine.output[0], 1125899906842624);
     }
 }
