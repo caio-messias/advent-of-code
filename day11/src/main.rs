@@ -117,14 +117,10 @@ fn paint_hull(tape: Vec<i64>, initial_color: &Color) -> HashMap<Position, Color>
     painted_tiles.insert(Position { x: 0, y: 0 }, *initial_color);
     machine.add_input(Color::to(initial_color));
 
-    loop {
-        machine.run();
-        if machine.halted() { break }
-        let color = Color::from(machine.get_output().unwrap());
-
-        machine.run();
-        if machine.halted() { break }
-        let turn_direction = TurnDirection::from(machine.get_output().unwrap());
+    while !machine.halted() {
+        let output = machine.run();
+        let color = Color::from(output[0]);
+        let turn_direction = TurnDirection::from(output[1]);
 
         painted_tiles.insert(robot.position, color);
         robot = turn_and_walk(turn_direction, &robot);

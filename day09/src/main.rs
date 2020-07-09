@@ -16,14 +16,13 @@ fn main() {
     let mut machine = IntcodeMachine::new(tape.clone())
         .with_input(1);
 
-    machine.run();
-    println!("Part 1: {}", machine.output[0]);
+    let output = machine.run();
+    println!("Part 1: {:?}", output[0]);
 
 
     let mut machine = IntcodeMachine::new(tape.clone())
         .with_input(2);
 
-    machine.run();
-    println!("Part 2: {}", machine.output[0]);
-
+    let output = machine.run();
+    println!("Part 2: {:?}", output[0]);
 }

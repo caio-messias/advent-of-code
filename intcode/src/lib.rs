@@ -5,7 +5,7 @@ pub struct IntcodeMachine {
     position: usize,
     relative_base: isize,
     input: VecDeque<i64>,
-    pub output: Vec<i64>,
+    output: Vec<i64>,
     status: MachineStatus,
 }
 
@@ -47,8 +47,10 @@ impl IntcodeMachine {
     }
 
     pub fn add_input(&mut self, input: i64) {
-        self.status = MachineStatus::Run;
-        self.input.push_back(input);
+        if self.status != MachineStatus::Halt {
+            self.status = MachineStatus::Run;
+            self.input.push_back(input);
+        }
     }
 
     fn parse_mode(&self, i: i64) -> ParameterMode {
@@ -82,16 +84,9 @@ impl IntcodeMachine {
         self.position += 1;
 
         let pointer: usize = match mode {
-            ParameterMode::Positional => {
-                self.tape[self.position] as usize
-            }
-            ParameterMode::Immediate => {
-                self.position
-            }
-            ParameterMode::Relative => {
-                let offset = self.tape[self.position] as isize;
-                (self.relative_base + offset) as usize
-            }
+            ParameterMode::Positional => self.tape[self.position] as usize,
+            ParameterMode::Immediate => self.position,
+            ParameterMode::Relative => (self.relative_base + self.tape[self.position] as isize) as usize,
         };
 
         if pointer > self.tape.len() {
@@ -102,7 +97,7 @@ impl IntcodeMachine {
     }
 
     fn fetch_dest(&mut self, mode: ParameterMode) -> usize {
-        return match mode {
+        match mode {
             ParameterMode::Positional | ParameterMode::Immediate => {
                 self.fetch_arg(ParameterMode::Immediate) as usize
             }
@@ -176,9 +171,9 @@ impl IntcodeMachine {
         self.position += 1;
     }
 
-    /// jump if not zero instruction, opcode 5.
+    /// Jump if not zero instruction, opcode 5.
     /// If the first parameter is non-zero, it sets the instruction pointer
-    /// to the value from the second parameter. Otherwise, it does nothing
+    /// to the value from the second parameter. Otherwise, it does nothing.
     fn jnz(&mut self) {
         let (mode2, mode1) = self.fetch2modes();
         let a = self.fetch_arg(mode1);
@@ -221,7 +216,7 @@ impl IntcodeMachine {
     }
 
     /// Test if equals instruction, opcode 8.
-    /// if the first parameter is equal to the second parameter, it stores 1 in the position given
+    /// If the first parameter is equal to the second parameter, it stores 1 in the position given
     /// by the third parameter. Otherwise, it stores 0.
     fn teq(&mut self) {
         let (mode3, mode2, mode1) = self.fetch3modes();
@@ -251,7 +246,6 @@ impl IntcodeMachine {
     /// This instruction signals end of execution and that the machine should exit immediately.
     fn halt(&mut self) {
         self.status = MachineStatus::Halt;
-        self.position += 1;
     }
 
     pub fn halted(&self) -> bool {
@@ -266,12 +260,14 @@ impl IntcodeMachine {
         return self.output.len() > 0;
     }
 
-    pub fn run(&mut self) -> i64 {
-        return self.run_for_target(0);
+    pub fn run(&mut self) -> Vec<i64> {
+        self.run_for_target(0);
+        return self.output.clone();
     }
 
     pub fn run_for_target(&mut self, target: usize) -> i64 {
         self.status = MachineStatus::Run;
+        self.output.clear();
 
         loop {
             let opcode = self.tape[self.position] % 100;
@@ -289,7 +285,10 @@ impl IntcodeMachine {
                 _ => panic!("Unknown opcode {} at position {}", opcode, self.position),
             }
 
-            if self.status == MachineStatus::Halt || self.status == MachineStatus::Yield {
+            if self.status == MachineStatus::Halt {
+                return self.tape[target];
+            }
+            if self.status == MachineStatus::Yield {
                 return self.tape[target];
             }
         }
@@ -305,7 +304,7 @@ mod tests {
         let tape: Vec<i64> = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let mut machine = IntcodeMachine::new(tape);
 
-        assert_eq!(machine.run(), 3500)
+        assert_eq!(machine.run_for_target(0), 3500)
     }
 
     #[test]
@@ -313,7 +312,7 @@ mod tests {
         let tape: Vec<i64> = vec![1, 0, 0, 0, 99];
         let mut machine = IntcodeMachine::new(tape);
 
-        assert_eq!(machine.run(), 2)
+        assert_eq!(machine.run_for_target(0), 2)
     }
 
     #[test]
@@ -337,7 +336,7 @@ mod tests {
         let tape: Vec<i64> = vec![1, 1, 1, 4, 99, 5, 6, 0, 99];
         let mut machine = IntcodeMachine::new(tape);
 
-        assert_eq!(machine.run(), 30)
+        assert_eq!(machine.run_for_target(0), 30)
     }
 
     #[test]
@@ -535,12 +534,11 @@ mod tests {
 
     #[test]
     fn test_quine() {
-        let mut tape: Vec<i64> = vec![109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99];
-        let tape_original = tape.clone();
-        let mut machine = IntcodeMachine::new(tape);
+        let tape: Vec<i64> = vec![109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99];
+        let mut machine = IntcodeMachine::new(tape.clone());
 
         machine.run();
-        assert_eq!(machine.output, tape_original);
+        assert_eq!(machine.output, tape);
     }
 
     #[test]

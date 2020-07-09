@@ -16,7 +16,7 @@ fn main() {
     // Part 1
     let mut machine = IntcodeMachine::new(tape.clone())
         .with_init(12, 02);
-    println!("Part 1: {}", machine.run());
+    println!("Part 1: {}", machine.run_for_target(0));
 
     // part 2
     let desired_output = 19690720;
@@ -26,7 +26,7 @@ fn main() {
             let mut machine = IntcodeMachine::new(tape.clone())
                 .with_init(noun, verb);
 
-            if machine.run() == desired_output {
+            if machine.run_for_target(0) == desired_output {
                 println!("Part 2: 100 * {} + {} = {}", noun, verb, 100* noun + verb);
             }
         }

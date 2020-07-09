@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::fs;
 
 use intcode::IntcodeMachine;
@@ -54,19 +53,10 @@ fn main() {
 
     // Part 1
     let mut machine = IntcodeMachine::new(tape.clone());
-
-    machine.run();
-    let output = &machine.output;
+    let output = machine.run();
 
     let block_tiles = output.chunks(3)
-        .fold(HashMap::new(), |mut tiles, output| {
-            let x = output[0];
-            let y = output[1];
-            let tile = Tile::from(output[2]);
-            tiles.insert(Position { x, y }, tile);
-            tiles
-        }).values()
-        .filter(|&&tile| tile == Tile::Block)
+        .filter(|&output| Tile::from(output[2]) == Tile::Block)
         .count();
 
     println!("Part 1: {}", block_tiles);
@@ -81,9 +71,8 @@ fn main() {
     let mut ball_x = 0;
     let mut pallet_x = 0;
 
-    loop {
-        machine.run();
-        let output = &machine.output;
+    while !machine.halted() {
+        let output = machine.run();
 
         for output in output.chunks(3) {
             let x = output[0];
@@ -100,13 +89,7 @@ fn main() {
             }
         }
 
-        if machine.yielded() {
-            machine.add_input(compare_position(ball_x, pallet_x))
-        }
-
-        if machine.halted() {
-            break;
-        }
+        machine.add_input(compare_position(ball_x, pallet_x))
     }
 
     println!("Part 2: {}", score);

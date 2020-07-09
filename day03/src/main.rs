@@ -30,11 +30,11 @@ fn move_one(point: &Point, direction: char, length: i32) -> Point {
     match direction {
         'R' => Point {
             x: point.x + length,
-            y: point.y
+            y: point.y,
         },
         'L' => Point {
             x: point.x - length,
-            y: point.y
+            y: point.y,
         },
         'U' => Point {
             x: point.x,
@@ -83,18 +83,18 @@ fn intersection(line1: &Line, line2: &Line) -> Option<Point> {
 
     let (vline, hline) = if line1.is_vertical() { (line1, line2) } else { (line2, line1) };
 
-    let horizontal_range = min(hline.start.x, hline.end.x) ..= max(hline.start.x, hline.end.x);
-    let vertical_range = min(vline.start.y, vline.end.y) ..= max(vline.start.y, vline.end.y);
+    let horizontal_range = min(hline.start.x, hline.end.x)..=max(hline.start.x, hline.end.x);
+    let vertical_range = min(vline.start.y, vline.end.y)..=max(vline.start.y, vline.end.y);
 
     if horizontal_range.contains(&vline.start.x) && vertical_range.contains(&hline.start.y) {
-        return Some(Point {x: vline.start.x, y: hline.start.y});
+        return Some(Point { x: vline.start.x, y: hline.start.y });
     }
 
     return None;
 }
 
 fn parse_lines(lines: Vec<String>) -> Vec<Line> {
-    let mut last_pos = Point {x: 0, y: 0};
+    let mut last_pos = Point { x: 0, y: 0 };
 
     return lines.iter()
         .map(|s: &String| {
@@ -103,7 +103,7 @@ fn parse_lines(lines: Vec<String>) -> Vec<Line> {
             let length = chars.collect::<String>().parse::<i32>().unwrap();
 
             let new_point = move_one(&last_pos, direction, length);
-            let new_line = Line {start: last_pos, end: new_point};
+            let new_line = Line { start: last_pos, end: new_point };
             last_pos = new_point;
 
             new_line

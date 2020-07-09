@@ -1,6 +1,6 @@
 use std::fs;
 
-fn read_input() -> Vec<char>{
+fn read_input() -> Vec<char> {
     return fs::read_to_string("input").unwrap()
         .chars()
         .collect();
@@ -14,14 +14,14 @@ struct Layer {
 impl Layer {
     fn count_zeroes(&self) -> usize {
         self.data.iter().fold(0, |zeroes, chars|
-            zeroes + chars.iter().filter(|&c| *c == '0' ).count()
+            zeroes + chars.iter().filter(|&c| *c == '0').count(),
         )
     }
 
     fn count_ones_and_twos(&self) -> (usize, usize) {
         self.data.iter().fold((0, 0), |(ones, twos), chars|
-            (ones + chars.iter().filter(|&c| *c == '1' ).count(),
-             twos + chars.iter().filter(|&c| *c == '2' ).count())
+            (ones + chars.iter().filter(|&c| *c == '1').count(),
+             twos + chars.iter().filter(|&c| *c == '2').count()),
         )
     }
 }
@@ -37,18 +37,18 @@ fn build_layers(chars: &[char], width: usize, height: usize) -> Vec<Layer> {
         layers.push(Layer { data: layer })
     }
 
-    return layers
+    return layers;
 }
 
 fn checksum(layers: &Vec<Layer>) -> i32 {
     let (fewest_zeroes_layer, _num_zeros) = layers.iter()
         .fold((&layers[0], layers[0].count_zeroes()),
-            |(fewest_zeroes_layer, num_zeros), current_layer|
-                if current_layer.count_zeroes() < num_zeros {
-                    (current_layer, current_layer.count_zeroes())
-                } else {
-                    (fewest_zeroes_layer, num_zeros)
-                });
+              |(fewest_zeroes_layer, num_zeros), current_layer|
+                  if current_layer.count_zeroes() < num_zeros {
+                      (current_layer, current_layer.count_zeroes())
+                  } else {
+                      (fewest_zeroes_layer, num_zeros)
+                  });
 
     let ones_and_twos = fewest_zeroes_layer.count_ones_and_twos();
     return (ones_and_twos.0 * ones_and_twos.1) as i32;
@@ -62,12 +62,11 @@ fn build_image(layers: &Vec<Layer>) -> Vec<Vec<char>> {
     for i in 0..height {
         for j in 0..width {
             for layer in layers {
-                if layer.data[i][j] == '2' { continue }
-                else {
+                if layer.data[i][j] == '2' { continue; } else {
                     image[i][j] = layer.data[i][j];
                     break;
-               }
-           }
+                }
+            }
         }
     }
 
@@ -81,9 +80,8 @@ fn print_image(image: &Vec<Vec<char>>) {
     for i in 0..height {
         for j in 0..width {
             if image[i][j] == '1' {
-                print!("*");
-            }
-            else {
+                print!("#");
+            } else {
                 print!(" ");
             }
         }

@@ -27,11 +27,10 @@ fn digits(i: i32) -> Vec<i32> {
 fn is_password(n: i32, is_strict: bool) -> bool {
     let digits = digits(n);
 
-    if is_strict {
-        return is_increasing(&digits) && has_repeating_digits_strict(&digits);
-    }
-    else {
-        return is_increasing(&digits) && has_repeating_digits(&digits)
+    return if is_strict {
+        is_increasing(&digits) && has_repeating_digits_strict(&digits)
+    } else {
+        is_increasing(&digits) && has_repeating_digits(&digits)
     }
 }
 
@@ -70,8 +69,7 @@ fn has_repeating_digits_strict(digits: &[i32]) -> bool {
     for current_digit in digits {
         if current_digit == last_digit {
             repeating_digits += 1;
-        }
-        else {
+        } else {
             if repeating_digits == 1 {
                 has_repeating_double_digits = true
             }

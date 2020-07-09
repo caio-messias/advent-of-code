@@ -13,9 +13,17 @@ fn read_input(path: &str) -> Vec<i64> {
 fn main() {
     let tape: Vec<i64> = read_input("input");
 
+    // Part 1
+    let mut machine = IntcodeMachine::new(tape.clone())
+        .with_input(1);
+
+    let output = machine.run();
+    println!("Part 1: {}", output[0]);
+
+    // Part 2
     let mut machine = IntcodeMachine::new(tape)
         .with_input(5);
 
-    machine.run();
-    println!("Part 2: {}", machine.get_output().unwrap());
+    let output = machine.run();
+    println!("Part 2: {}", output[0]);
 }

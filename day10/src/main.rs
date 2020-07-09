@@ -131,7 +131,9 @@ impl Iterator for VaporizingLaser {
     }
 }
 
-fn gcd(mut a: i32, mut b: i32) -> i32 {
+fn gcd(a: i32, b: i32) -> i32 {
+    let mut a = a;
+    let mut b = b;
     while b != 0 {
         let tmp = a;
         a = b;

@@ -29,6 +29,7 @@ fn calculate_total_fuel(modules: &[i32], calculate_fuel_method: fn(i32) -> i32) 
         .map(|x| calculate_fuel_method(*x))
         .sum()
 }
+
 fn main() {
     let modules: Vec<i32> = read_input("input")
         .expect("Could not read the input file")
