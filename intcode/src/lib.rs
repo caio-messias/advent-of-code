@@ -285,10 +285,7 @@ impl IntcodeMachine {
                 _ => panic!("Unknown opcode {} at position {}", opcode, self.position),
             }
 
-            if self.status == MachineStatus::Halt {
-                return self.tape[target];
-            }
-            if self.status == MachineStatus::Yield {
+            if self.status == MachineStatus::Halt || self.status == MachineStatus::Yield {
                 return self.tape[target];
             }
         }
