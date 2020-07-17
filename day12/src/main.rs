@@ -1,20 +1,21 @@
-use std::fmt;
-use regex::Regex;
-use std::io::{BufReader, BufRead};
-use std::fs::File;
+use std::{fmt, fs};
 use std::cmp::Ordering;
 
+use regex::Regex;
+
 fn read_input(path: &str) -> Vec<Moon> {
+    let input: String = fs::read_to_string(path)
+        .expect("Failed to read input file.");
+
     let re = Regex::new(r"<x=(-?\d+), y=(-?\d+), z=(-?\d+)").unwrap();
 
-    BufReader::new(File::open(path).unwrap())
+    input
         .lines()
         .map(|line| {
-            let line = line.unwrap();
             let capture = re.captures(&line).unwrap();
-            let x: i32 = capture.get(1).unwrap().as_str().parse().unwrap();
-            let y: i32 = capture.get(2).unwrap().as_str().parse().unwrap();
-            let z: i32 = capture.get(3).unwrap().as_str().parse().unwrap();
+            let x: i32 = capture[1].parse().unwrap();
+            let y: i32 = capture[2].parse().unwrap();
+            let z: i32 = capture[3].parse().unwrap();
 
             Moon::new(x, y, z)
         })
