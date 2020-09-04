@@ -57,7 +57,7 @@ fn decode_message(signal: Vec<i32>) -> String {
 /// 0*0  + 3*0  + 4*0  + 1*0  + 5*0  + 5*1  + 1*1  + 8*1  = 4 << 14 = 5 (current digit) + 9 (just calculated) 
 /// 0*0  + 3*0  + 4*0  + 1*0  + 5*0  + 5*0  + 1*1  + 8*1  = 9 << 9 = 1 (current digit) + 8 (just calculated) 
 /// 0*0  + 3*0  + 4*0  + 1*0  + 5*0  + 5*0  + 1*0  + 8*1  = 8 << only use the last digit of the current message
-fn decode_message_full(signal: Vec<i32>) -> String {
+fn decode_full_message(signal: Vec<i32>) -> String {
     let len = signal.len();
 
     (0..100).fold(signal, |acc, _| {
@@ -90,9 +90,8 @@ fn main() {
     let message = decode_message(signal);
     println!("Part 1: {}", message);
 
-    let full_message = decode_message_full(full_signal);
+    let full_message = decode_full_message(full_signal);
     println!("Part 2: {}", full_message);
-    // 17069048
 }
 
 fn vec_to_number(digits: Vec<i32>) -> i64 {
@@ -104,7 +103,7 @@ fn vec_to_number(digits: Vec<i32>) -> i64 {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{decode_message_full, vec_to_number};
+    use crate::{decode_full_message, vec_to_number};
 
     #[test]
     fn vec_9834_should_return_number_9834() {
@@ -122,7 +121,7 @@ pub mod tests {
 
         let full_signal: Vec<i32> = full_signal.chars().skip(offset).map(|c| c.to_digit(10).unwrap() as i32).collect();
 
-        let message = decode_message_full(full_signal);
+        let message = decode_full_message(full_signal);
         assert_eq!(message, "84462026")
     }
 
@@ -136,7 +135,7 @@ pub mod tests {
 
         let full_signal: Vec<i32> = full_signal.chars().skip(offset).map(|c| c.to_digit(10).unwrap() as i32).collect();
 
-        let message = decode_message_full(full_signal);
+        let message = decode_full_message(full_signal);
         assert_eq!(message, "78725270")
     }
 
@@ -150,7 +149,7 @@ pub mod tests {
 
         let full_signal: Vec<i32> = full_signal.chars().skip(offset).map(|c| c.to_digit(10).unwrap() as i32).collect();
 
-        let message = decode_message_full(full_signal);
+        let message = decode_full_message(full_signal);
         assert_eq!(message, "53553731")
     }
 }
