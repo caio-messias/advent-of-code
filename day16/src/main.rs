@@ -23,6 +23,7 @@ fn pattern(i: usize) -> impl Iterator<Item = i32> {
         .skip(1);
 }
 
+/// Naive decoding: run the algorithm exactly as it was described in the problem.
 fn decode_message(signal: Vec<i32>) -> String {
     (0..100)
         .fold(signal, |acc, _| run_phase(acc))
@@ -32,6 +33,30 @@ fn decode_message(signal: Vec<i32>) -> String {
         .collect()
 }
 
+/// To decode the full message, due to its size, we need to do some optimizations.
+/// 
+/// Notice that in the second half of the result message the pattern in entirely composed of 0s and 1s.
+/// Since we have an offset that puts us way past the half of the message, we can safely ignore the pattern and only
+/// worry with when it will be zero or not. In the full message there won't be a moment where the pattern is -1.
+/// 
+/// Also, notice that the pattern for the last digit is all 0s except for the last. 
+/// As such, the last digit in the new message will be equal to the last digit of the current message.
+/// The pattern for the second to last digit is all zeros except for the last two digits.
+/// As such, the second to last digit in the new message is the last digit in the new message we just calculated
+/// + the second to last digit of the current message.
+/// 
+/// If we start processing the message backwards, we can store the value of the previous calculation and simply add the current digit
+/// to obtain the digit of the new message.
+/// 
+/// Example with an offset of 4:
+/// 0*1  + 3*0  + 4*-1 + 1*0  + 5*1  + 5*0  + 1*-1 + 8*0  = 0
+/// 0*0  + 3*1  + 4*1  + 1*0  + 5*0  + 5*-1 + 1*-1 + 8*0  = 1
+/// 0*0  + 3*0  + 4*1  + 1*1  + 5*1  + 5*0  + 1*0  + 8*0  = 0
+/// 0*0  + 3*0  + 4*0  + 1*1  + 5*1  + 5*1  + 1*1  + 8*0  = 2 << half of the message. Below here the pattern if only 0s and 1s, in this order.
+/// 0*0  + 3*0  + 4*0  + 1*0  + 5*1  + 5*1  + 1*1  + 8*1  = 9 << 19 = 5 (current digit) + 14 (just calculated)
+/// 0*0  + 3*0  + 4*0  + 1*0  + 5*0  + 5*1  + 1*1  + 8*1  = 4 << 14 = 5 (current digit) + 9 (just calculated) 
+/// 0*0  + 3*0  + 4*0  + 1*0  + 5*0  + 5*0  + 1*1  + 8*1  = 9 << 9 = 1 (current digit) + 8 (just calculated) 
+/// 0*0  + 3*0  + 4*0  + 1*0  + 5*0  + 5*0  + 1*0  + 8*1  = 8 << only use the last digit of the current message
 fn decode_message_full(signal: Vec<i32>) -> String {
     let len = signal.len();
 
