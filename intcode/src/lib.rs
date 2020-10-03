@@ -35,6 +35,11 @@ impl IntcodeMachine {
         }
     }
 
+    pub fn with_zeroth(mut self, value: i64) -> IntcodeMachine {
+        self.tape[0] = value;
+        return self;
+    }
+
     pub fn with_init(mut self, noun: i64, verb: i64) -> IntcodeMachine {
         self.tape[1] = noun;
         self.tape[2] = verb;
@@ -44,6 +49,15 @@ impl IntcodeMachine {
     pub fn with_input(mut self, input: i64) -> Self {
         self.add_input(input);
         return self;
+    }
+
+    pub fn with_inputs(mut self, input: &VecDeque<i64>) -> Self {
+        self.add_inputs(input);
+        return self;
+    }
+
+    pub fn add_inputs(&mut self, input: &VecDeque<i64>) {
+        input.iter().for_each(|i| self.add_input(*i));
     }
 
     pub fn add_input(&mut self, input: i64) {
@@ -89,7 +103,7 @@ impl IntcodeMachine {
             ParameterMode::Relative => (self.relative_base + self.tape[self.position] as isize) as usize,
         };
 
-        if pointer > self.tape.len() {
+        if pointer >= self.tape.len() {
             self.tape.resize(pointer * 2, 0);
         }
 
@@ -109,7 +123,7 @@ impl IntcodeMachine {
     }
 
     fn store(&mut self, dest: usize, value: i64) {
-        if dest > self.tape.len() {
+        if dest >= self.tape.len() {
             self.tape.resize(dest * 2, 0);
         }
         self.tape[dest] = value;
